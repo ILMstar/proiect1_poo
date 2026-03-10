@@ -53,6 +53,7 @@ class item {
 class lista {
     public:
         vector<item> lista_licitatie;
+        int display[3];
         void citire_lista(string fisier) {
             ifstream file(fisier);
             string line;
@@ -71,7 +72,18 @@ class lista {
                 }
                 lista_licitatie.push_back(item(nume_produs, pret, stoc));
             }
-        } 
+        }
+        void item_select () { // selecteaza 4 elemente random pt licitatie
+            for (int i = 0; i < 4; i++) {
+                random_device rd;
+                mt19937 gen(rd());
+                uniform_int_distribution<int> dis(0, 100);
+                display[i] = dis(gen);
+            }
+        }
+        void show_selected_itms () {
+        
+        }
 };
 
 class shop {
