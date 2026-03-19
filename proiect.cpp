@@ -20,6 +20,9 @@ class player {
             inv[id]++;
             balance -= pret;
         }
+        int check_balance() {
+            return balance;
+        }
 };
 
 class bot {
@@ -65,7 +68,7 @@ class lista {
                 int id = 0, pret = 0, stoc = 0, cee = 0;
                 string nume_produs = "";
                 for (int i = 0; i < line.length(); i++) {
-                    if (line[i] == '-') { 
+                    if (line[i] == '@') { 
                         cee++;
                         continue;
                     }
@@ -82,7 +85,7 @@ class lista {
             for (int i = 0; i < 4; i++) {
                 uniform_int_distribution<int> dis(0, nrelem);
                 if (i > 0 && display[i - 1] == dis(gen)) {
-                    for(int j; j < i; j++) {
+                    for(int j = 0; j < i; j++) {
                         if (display[j] == dis(gen))
                             uniform_int_distribution<int> dis(0, nrelem);
                     }
@@ -94,6 +97,9 @@ class lista {
             for (int i = 0; i < 4; i++) {
                 lista_licitatie[display[i]].show();
             }
+        }
+        void show_bidding_item (int n) {
+            lista_licitatie[display[n]].show();
         }
 };
 
@@ -114,7 +120,7 @@ class shop {
 };
 
 int main () {
-    lista l1; // creaza lista din input
+    lista l1; // creaza lista din fisier
     l1.citire_lista("obiecte.txt");
 
     string name;
@@ -124,9 +130,36 @@ int main () {
     cout << "Your name has been registered" << endl; 
     player j1(name, 50000);
     
+    char cont = 'y', wnb;
+    int cateIteme, ceItm;
+    while (j1.check_balance() > 0 && cont == 'y') { // cat timp balance > 0 si jucatorul alege y dintre y/n
+        l1.item_select();
+        l1.show_selected_itms();
+        cout << "Do you want to buy something?" << endl << "y/n ";
+        cin >> wnb;
+        if (wnb == 'y') {
+            system("cls");
+            l1.item_select();
+            l1.show_selected_itms();
+            cout << "How many items do you want to buy? -> ...";
+            cin >> cateIteme;
+            for (int i = 0; i < cateIteme; i++) {
+                cout << "Choose item no. " << i + 1 << " (ex: 4) -> ";
+                cin >> ceItm;
+                ceItm --;
+                system("cls");
+                l1.show_bidding_item(ceItm);
+                // implementat bidding roboti
+                // implementat bidding player
+            }
+        }
+        cout << "Do you want to continue? y/n ";
+        cin >> cont;
+    }
+
     // selecteaza ce poti sa cumperi in runda curenta si le arata
-    l1.item_select();
-    l1.show_selected_itms();
+    // l1.item_select();
+    // l1.show_selected_itms();
 
     // l1.lista_licitatie[display[0]].show(); // verificam si eu daca merge
 
