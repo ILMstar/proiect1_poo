@@ -3,6 +3,7 @@
 #include <vector>
 #include <random>
 #include <string>
+#include <ctime>
 using namespace std;
 
 class player {
@@ -46,14 +47,16 @@ class item {
             stock--;
         }
         void show(){
-            cout << "Name: " << name << " -> Price: " << price << endl;
+            cout << "Item: " << name << " -> Price: " << price << " $" << endl;
         }
 };
 
 class lista {
+    private:
+        int display[4];
+        int nrelem = -1;
     public:
         vector<item> lista_licitatie;
-        int display[3];
         void citire_lista(string fisier) {
             ifstream file(fisier);
             string line;
@@ -71,18 +74,26 @@ class lista {
                     if (cee == 2) stoc = stoc * 10 + (line[i] - '0');
                 }
                 lista_licitatie.push_back(item(nume_produs, pret, stoc));
+                nrelem++;
             }
         }
         void item_select () { // selecteaza 4 elemente random pt licitatie
+            mt19937 gen(time(nullptr)); // de adaugat verificarea daca inca e in stoc
             for (int i = 0; i < 4; i++) {
-                random_device rd;
-                mt19937 gen(rd());
-                uniform_int_distribution<int> dis(0, 100);
+                uniform_int_distribution<int> dis(0, nrelem);
+                if (i > 0 && display[i - 1] == dis(gen)) {
+                    for(int j; j < i; j++) {
+                        if (display[j] == dis(gen))
+                            uniform_int_distribution<int> dis(0, nrelem);
+                    }
+                }
                 display[i] = dis(gen);
             }
         }
         void show_selected_itms () {
-        
+            for (int i = 0; i < 4; i++) {
+                lista_licitatie[display[i]].show();
+            }
         }
 };
 
@@ -104,7 +115,7 @@ class shop {
 
 int main () {
     lista l1; // creaza lista din input
-    l1.citire_lista("input.txt");
+    l1.citire_lista("obiecte.txt");
 
     string name;
     cout << "Enter your name: ";
@@ -113,14 +124,9 @@ int main () {
     cout << "Your name has been registered" << endl; 
     player j1(name, 50000);
     
-    // selecteaza ce poti sa cumperi in runda curenta
-    int display[3];
-    for (int i = 0; i < 4; i++) {
-        random_device rd;
-        mt19937 gen(rd());
-        uniform_int_distribution<int> dis(0, 100);
-        display[i] = dis(gen);
-    }
+    // selecteaza ce poti sa cumperi in runda curenta si le arata
+    l1.item_select();
+    l1.show_selected_itms();
 
     // l1.lista_licitatie[display[0]].show(); // verificam si eu daca merge
 
