@@ -1,3 +1,8 @@
+/*
+ * DESCRIEREA PROBLEMEI ESTE IN README.md
+ * Tema 34: Licitatii (Joc de licitatie / Shop)
+ */
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -8,7 +13,7 @@
 #include <cstdlib> // pt std::system
 
 static std::mt19937& global_rng() {
-    // Seed once from current time to keep randomness stable across calls.
+    // Seed luat de la ceasul calculatorului pt randomness
     static std::mt19937 gen(static_cast<unsigned>(std::time(nullptr)));
     return gen;
 }
@@ -53,29 +58,34 @@ class player {
 private:
     std::string name;
     int balance;
-    int inv[99];
+    int* inv; // pt alocare dinamica
     
 public:
     player(const std::string& n = "Unknown", int b = 0) {
         name = n;
         balance = b;
+        inv = new int[99];
         for(int i=0; i<99; i++) inv[i] = 0;
     }
     
     player(const player& other) {
         name = other.name; balance = other.balance;
+        inv = new int[99]; // alocam memorie pt copiere
         for(int i=0; i<99; i++) inv[i] = other.inv[i];
     }
     
     player& operator=(const player& other) {
         if (this != &other) {
             name = other.name; balance = other.balance;
+            // memorie incarcata doar scriem peste
             for(int i=0; i<99; i++) inv[i] = other.inv[i];
         }
         return *this;
     }
     
-    ~player() {}
+    ~player() {
+        delete[] inv;
+    }
 
     void bought(int id, int pret) {
         inv[id]++;
@@ -97,9 +107,9 @@ class bot {
         int bot_bid;
         int max_price;
         std::string name;
-        int gen_mul(){ 
-            std::uniform_real_distribution<double> dis(0.5, 2.1);
-            return static_cast<int>(dis(global_rng()));
+        int gen_mul(){ // genereaza * cat poate sa pluseze pretul
+            std::uniform_real_distribution<double> dis(1.0, 3.0);
+            return std::max(1, static_cast<int>(dis(global_rng())));
         }
     public:
         bot(const std::string& n = "SimpleBOT"){
@@ -114,10 +124,10 @@ class bot {
         void call_mpr(int price_of_item) { 
             max_price = price_of_item * gen_mul();
         }
-        int new_bidding(player& current_player, int player_price, int item_id, int item_pret){ 
+        int new_bidding(player& current_player, int player_price, int item_id, int item_pret){ // game engine
             if (player_price < max_price) {
                 std::uniform_real_distribution<double> dis(0.5, 2.1);
-                bot_bid = player_price + static_cast<int>(100 * dis(global_rng()));
+                bot_bid = player_price + static_cast<int>(500 * dis(global_rng()));
                 std::cout<<"The bot has bid "<< bot_bid <<"\n";
                 return true; 
             }
@@ -126,6 +136,13 @@ class bot {
                 current_player.bought(item_id, player_price); 
                 return false; 
             }
+        }
+
+        int get_bid() const {return bot_bid;};
+
+        friend std::ostream& operator<<(std::ostream& os, const bot& b) {
+            os << "Bot-ul " << b.name;
+            return os;
         }
 };
 
@@ -144,7 +161,7 @@ public:
         }
         
         std::string line;
-        while (getline(file, line)) {
+        while (getline(file, line)) { // interpretare fisier simbolul @ delimiteaza nume pret si cantitate
             int pret = 0, stoc = 0, cee = 0;
             std::string nume_produs = "";
             
@@ -161,12 +178,12 @@ public:
         file.close();
     }
 
-    void item_select() { 
+    void item_select() { // selecteaza 4 iteme pt licitatie
         if (lista_licitatie.size() < 4) return; 
 
         std::uniform_int_distribution<int> dis(0, lista_licitatie.size() - 1);
         
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) { // selecteaza 4 id-uri de iteme
             int numar_extras;
             bool este_duplicat;
             do {
@@ -200,8 +217,13 @@ public:
         current_item = lista_licitatie[display[i]];
     }
 
-    int get_id(int i) {
+    int get_id(int i) const {
         return display[i];
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const lista& l) { // afisare prin returnare de consola
+        os << "Lista contine " << l.lista_licitatie.size() << " oferte valabile.";
+        return os;
     }
 };
 
@@ -324,7 +346,7 @@ int main() {
                     if (bidding_cont == 'y') {
                         std::cout << "Your bid: ";
                         std::cin >> player_bid_pricecall;
-                        while (player_bid_pricecall > j1.check_balance()) {
+                        while (player_bid_pricecall > j1.check_balance() || player_bid_pricecall < gigel.get_bid()) {
                             std::cout << "You can't bid that much money!!! Bid again: ";
                             std::cin >> player_bid_pricecall;
                         }
