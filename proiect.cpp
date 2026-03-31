@@ -92,6 +92,11 @@ public:
         balance -= pret; 
     }
 
+    void sold(int id, int pret) {          // mai vedem daca mai trb ceva adaugat aici -------------------------------------------------------
+        inv[id]--;
+        balance += pret;
+    }
+
     int check_balance() const {
         return balance;
     }
@@ -226,27 +231,21 @@ class lista {
         }
 };
 
-class shop : public lista {
-    private:
-        //
-    public:
-        void place_shop() {
+void place_shop(lista& lista_curenta) {
+    std::system("cls");
+    std::cout << "The trader has arrived and now is setting up the shop!\n";
+    Sleep(1500);
+    std::system("cls");
+    char v[4] = {'-', '\\', '|', '/'};
+    for (int j = 0; j < 8; j++)
+        for (int i = 0; i < 4; i++) {
+            std::cout << "Loading " << v[i];
+            Sleep(50);
             std::system("cls");
-            std::cout << "The trader has arrived and now is setting up the shop!\n";
-            Sleep(1500);
-            std::system("cls");
-            char v[4] = {'-', '\\', '|', '/'};
-            for (int j = 0; j < 8; j++)
-                for (int i = 0; i < 4; i++) {
-                    std::cout << "Loading " << v[i];
-                    Sleep(50);
-                    std::system("cls");
-                }
-            item_select();
-            show_selected_itms(); 
-            // acum partea unde cumpara playerul aici ca itemele sunt selectate
         }
-};
+    lista_curenta.item_select();
+    lista_curenta.show_selected_itms(); 
+}
 
 void runTutorial(lista& l1) {
     std::cout << "\n============================================\n";
