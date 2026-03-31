@@ -147,84 +147,105 @@ class bot {
 };
 
 class lista {
-private:
-    int display[4];
-    
-public:
-    std::vector<item> lista_licitatie;
+    private:
+        int display[4];    
+    public:
+        std::vector<item> lista_licitatie;
 
-    void citire_lista(const std::string& fisier) { 
-        std::ifstream file(fisier);
-        if(!file.is_open()) {
-            std::cout << "Fisierul nu a fost gasit: " << fisier << "\n";
-            return;
-        }
-        
-        std::string line;
-        while (getline(file, line)) { // interpretare fisier simbolul @ delimiteaza nume pret si cantitate
-            int pret = 0, stoc = 0, cee = 0;
-            std::string nume_produs = "";
-            
-            for (std::size_t i = 0; i < line.length(); i++) {
-                if (line[i] == '@') { 
-                    cee++; continue;
-                }
-                if (cee == 0) nume_produs += line[i];
-                if (cee == 1) pret = pret * 10 + (line[i] - '0');
-                if (cee == 2) stoc = stoc * 10 + (line[i] - '0');
+        void citire_lista(const std::string& fisier) { 
+            std::ifstream file(fisier);
+            if(!file.is_open()) {
+                std::cout << "Fisierul nu a fost gasit: " << fisier << "\n";
+                return;
             }
-            lista_licitatie.push_back(item(nume_produs, pret, stoc));
-        }
-        file.close();
-    }
-
-    void item_select() { // selecteaza 4 iteme pt licitatie
-        if (lista_licitatie.size() < 4) return; 
-
-        std::uniform_int_distribution<int> dis(0, lista_licitatie.size() - 1);
-        
-        for (int i = 0; i < 4; i++) { // selecteaza 4 id-uri de iteme
-            int numar_extras;
-            bool este_duplicat;
-            do {
-                este_duplicat = false;
-                numar_extras = dis(global_rng());
-                for (int j = 0; j < i; j++) {
-                    if (display[j] == numar_extras) {
-                        este_duplicat = true;
-                    }
-                }
-            } while (este_duplicat); 
             
-            display[i] = numar_extras;
+            std::string line;
+            while (getline(file, line)) { // interpretare fisier simbolul @ delimiteaza nume pret si cantitate
+                int pret = 0, stoc = 0, cee = 0;
+                std::string nume_produs = "";
+                
+                for (std::size_t i = 0; i < line.length(); i++) {
+                    if (line[i] == '@') { 
+                        cee++; continue;
+                    }
+                    if (cee == 0) nume_produs += line[i];
+                    if (cee == 1) pret = pret * 10 + (line[i] - '0');
+                    if (cee == 2) stoc = stoc * 10 + (line[i] - '0');
+                }
+                lista_licitatie.push_back(item(nume_produs, pret, stoc));
+            }
+            file.close();
         }
-    }
 
-    void show_selected_itms() const {
-        std::cout << "\n=== LA LICITATIE RUNDA ASTA ===\n";
-        for (int i = 0; i < 4; i++) {
-            std::cout << "[" << i + 1 << "] " << lista_licitatie[display[i]] << "\n";
+        void item_select() { // selecteaza 4 iteme pt licitatie
+            if (lista_licitatie.size() < 4) return; 
+
+            std::uniform_int_distribution<int> dis(0, lista_licitatie.size() - 1);
+            
+            for (int i = 0; i < 4; i++) { // selecteaza 4 id-uri de iteme
+                int numar_extras;
+                bool este_duplicat;
+                do {
+                    este_duplicat = false;
+                    numar_extras = dis(global_rng());
+                    for (int j = 0; j < i; j++) {
+                        if (display[j] == numar_extras) {
+                            este_duplicat = true;
+                        }
+                    }
+                } while (este_duplicat); 
+                
+                display[i] = numar_extras;
+            }
         }
-    }
 
-    void show_bidding_item(int n) const {
-        if (n >= 0 && n < 4) {
-            std::cout << "\nSe liciteaza pentru: " << lista_licitatie[display[n]] << "\n";
+        void show_selected_itms() const {
+            std::cout << "\n=== LA LICITATIE RUNDA ASTA ===\n";
+            for (int i = 0; i < 4; i++) {
+                std::cout << "[" << i + 1 << "] " << lista_licitatie[display[i]] << "\n";
+            }
         }
-    }
 
-    void copy_item(item& current_item, int i){ 
-        current_item = lista_licitatie[display[i]];
-    }
+        void show_bidding_item(int n) const {
+            if (n >= 0 && n < 4) {
+                std::cout << "\nSe liciteaza pentru: " << lista_licitatie[display[n]] << "\n";
+            }
+        }
 
-    int get_id(int i) const {
-        return display[i];
-    }
+        void copy_item(item& current_item, int i){ 
+            current_item = lista_licitatie[display[i]];
+        }
 
-    friend std::ostream& operator<<(std::ostream& os, const lista& l) { // afisare prin returnare de consola
-        os << "Lista contine " << l.lista_licitatie.size() << " oferte valabile.";
-        return os;
-    }
+        int get_id(int i) const {
+            return display[i];
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const lista& l) { // afisare prin returnare de consola
+            os << "Lista contine " << l.lista_licitatie.size() << " oferte valabile.";
+            return os;
+        }
+};
+
+class shop : public lista {
+    private:
+        //
+    public:
+        void place_shop() {
+            std::system("cls");
+            std::cout << "The trader has arrived and now is setting up the shop!\n";
+            Sleep(1500);
+            std::system("cls");
+            char v[4] = {'-', '\\', '|', '/'};
+            for (int j = 0; j < 8; j++)
+                for (int i = 0; i < 4; i++) {
+                    std::cout << "Loading " << v[i];
+                    Sleep(50);
+                    std::system("cls");
+                }
+            item_select();
+            show_selected_itms(); 
+            // acum partea unde cumpara playerul aici ca itemele sunt selectate
+        }
 };
 
 void runTutorial(lista& l1) {
@@ -232,7 +253,7 @@ void runTutorial(lista& l1) {
     std::cout << "          TUTORIAL AUTOMAT PORNIT           \n";
     std::cout << "============================================\n";
     
-    player tut_player("Jucator_Tutorial", 5000);
+    player tut_player("Jucator_Tutorial", 500000);
     bot tut_bot("Bot_Tutorial");
 
     std::cout << "[TUTORIAL] Primesti un cont de start.\n";
@@ -293,6 +314,7 @@ int main() {
         return 0;
     }
 
+    std::system("cls");
     std::string name;
     std::cout << "\nEnter your name: ";
     std::cin >> name;
@@ -365,7 +387,7 @@ int main() {
         }
     }
 
-    std::cout << "\nJoc terminat! " << j1 << "\n";
+    std::cout << "\nGame Over!" << j1 << "\n";
 
     return 0;
 }
