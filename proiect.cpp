@@ -19,92 +19,96 @@ static std::mt19937& global_rng() {
 }
 
 class item {
-private:
-    std::string name;
-    int price;
-    int stock;
-    
-public:
-    item(const std::string& n = "", int p = 0, int s = 0) {
-        name = n; price = p; stock = s;
-    }
-    
-    item(const item& other) {
-        name = other.name; price = other.price; stock = other.stock;
-    }
-    
-    item& operator=(const item& other) {
-        if (this != &other) {
+    private:
+        std::string name;
+        int price;
+        int stock;
+        
+    public:
+        item(const std::string& n = "", int p = 0, int s = 0) {
+            name = n; price = p; stock = s;
+        }
+        
+        item(const item& other) {
             name = other.name; price = other.price; stock = other.stock;
         }
-        return *this;
-    }
-    
-    ~item() {}
+        
+        item& operator=(const item& other) {
+            if (this != &other) {
+                name = other.name; price = other.price; stock = other.stock;
+            }
+            return *this;
+        }
+        
+        ~item() {}
 
-    void stk_dcl() { stock--; }
-    
-    std::string getName() const { return name; }
-    int getPrice() const { return price; }
-    int getStock() const { return stock; }
+        void stk_dcl() { stock--; }
+        
+        std::string getName() const { return name; }
+        int getPrice() const { return price; }
+        int getStock() const { return stock; }
 
-    friend std::ostream& operator<<(std::ostream& os, const item& i) {
-        os << "Item: " << i.name << " -> Price: " << i.price << " $ (Stoc: " << i.stock << ")";
-        return os;
-    }
+        friend std::ostream& operator<<(std::ostream& os, const item& i) {
+            os << "Item: " << i.name << " -> Price: " << i.price << " $ (Stock: " << i.stock << ")";
+            return os;
+        }
 };
 
 class player {
-private:
-    std::string name;
-    int balance;
-    int* inv; // pt alocare dinamica
-    
-public:
-    player(const std::string& n = "Unknown", int b = 0) {
-        name = n;
-        balance = b;
-        inv = new int[99];
-        for(int i=0; i<99; i++) inv[i] = 0;
-    }
-    
-    player(const player& other) {
-        name = other.name; balance = other.balance;
-        inv = new int[99]; // alocam memorie pt copiere
-        for(int i=0; i<99; i++) inv[i] = other.inv[i];
-    }
-    
-    player& operator=(const player& other) {
-        if (this != &other) {
+    private:
+        std::string name;
+        int balance;
+        int* inv; // pt alocare dinamica
+        
+    public:
+        player(const std::string& n = "Unknown", int b = 0) {
+            name = n;
+            balance = b;
+            inv = new int[99];
+            for(int i=0; i<99; i++) inv[i] = 0;
+        }
+        
+        player(const player& other) {
             name = other.name; balance = other.balance;
-            // memorie incarcata doar scriem peste
+            inv = new int[99]; // alocam memorie pt copiere
             for(int i=0; i<99; i++) inv[i] = other.inv[i];
         }
-        return *this;
-    }
-    
-    ~player() {
-        delete[] inv;
-    }
+        
+        player& operator=(const player& other) {
+            if (this != &other) {
+                name = other.name; balance = other.balance;
+                // memorie incarcata doar scriem peste
+                for(int i=0; i<99; i++) inv[i] = other.inv[i];
+            }
+            return *this;
+        }
+        
+        ~player() {
+            delete[] inv;
+        }
 
-    void bought(int id, int pret) {
-        inv[id]++;
-        balance -= pret; 
-    }
+        void bought(int id, int pret) {
+            inv[id]++;
+            balance -= pret; 
+        }
 
-    void sold(int id, int pret) {          // mai vedem daca mai trb ceva adaugat aici -------------------------------------------------------
-        inv[id]--;
-        balance += pret;
-    }
+        void sold(int id, int pret) { 
+            if (inv[id] > 0) {        // mai vedem daca mai trb ceva adaugat aici -------------------------------------------------------
+                inv[id]--;
+                balance += pret;
+            }
+            else
+                std::cout << "You don't have this item\n";
+        }
 
-    int check_balance() const {
-        return balance;
-    }
-    
-    friend std::ostream& operator<<(std::ostream& os, const player& p) { 
-        os << "Jucator: " << p.name << " | Balanta: " << p.balance << " $";
-        return os;
-    }
+        int check_balance() const {
+            return balance;
+        }
+        
+        friend std::ostream& operator<<(std::ostream& os, const player& p) { 
+            os << "Player: " << p.name << " | Balance: " << p.balance << " $";
+            return os;
+        }
 };
 
 class bot {
@@ -112,7 +116,7 @@ class bot {
         int bot_bid;
         int max_price;
         std::string name;
-        int gen_mul(){ // genereaza * cat poate sa pluseze pretul
+        int gen_mul(){ // genereaza inmultitorul care arata ori cat poate sa pluseze pretul
             std::uniform_real_distribution<double> dis(1.0, 3.0);
             return std::max(1, static_cast<int>(dis(global_rng())));
         }
@@ -120,9 +124,16 @@ class bot {
         bot(const std::string& n = "SimpleBOT"){
             name = n;
         }
+        bot(const bot& other) {
+            name = other.name;
+            bot_bid = other.bot_bid;
+            max_price = other.max_price;
+        }
         bot& operator=(const bot& other) {
             if (this != &other) {
                 name = other.name;
+                bot_bid = other.bot_bid;
+                max_price = other.max_price;
             }
             return *this;
         }
@@ -146,7 +157,7 @@ class bot {
         int get_bid() const {return bot_bid;};
 
         friend std::ostream& operator<<(std::ostream& os, const bot& b) {
-            os << "Bot-ul " << b.name;
+            os << "Bot " << b.name;
             return os;
         }
 };
@@ -157,10 +168,21 @@ class lista {
     public:
         std::vector<item> lista_licitatie;
 
+        lista(const lista& other) {
+            for (int i = 0; i < 4; i++)
+                display[i] = other.display[i];
+        }
+        lista& operator=(const lista& other) {
+            if (this != &other) {
+                for (int i = 0; i < 4; i++)
+                    display[i] = other.display[i];
+            }
+            return *this;
+        }
         void citire_lista(const std::string& fisier) { 
             std::ifstream file(fisier);
             if(!file.is_open()) {
-                std::cout << "Fisierul nu a fost gasit: " << fisier << "\n";
+                std::cout << "File not found: " << fisier << "\n";
                 return;
             }
             
@@ -205,7 +227,7 @@ class lista {
         }
 
         void show_selected_itms() const {
-            std::cout << "\n=== LA LICITATIE RUNDA ASTA ===\n";
+            std::cout << "\n=== UP FOR AUCTION THIS ROUND ===\n";
             for (int i = 0; i < 4; i++) {
                 std::cout << "[" << i + 1 << "] " << lista_licitatie[display[i]] << "\n";
             }
@@ -213,7 +235,7 @@ class lista {
 
         void show_bidding_item(int n) const {
             if (n >= 0 && n < 4) {
-                std::cout << "\nSe liciteaza pentru: " << lista_licitatie[display[n]] << "\n";
+                std::cout << "\nBidding for: " << lista_licitatie[display[n]] << "\n";
             }
         }
 
@@ -226,7 +248,7 @@ class lista {
         }
 
         friend std::ostream& operator<<(std::ostream& os, const lista& l) { // afisare prin returnare de consola
-            os << "Lista contine " << l.lista_licitatie.size() << " oferte valabile.";
+            os << "The list contains " << l.lista_licitatie.size() << " valid offers.";
             return os;
         }
 };
@@ -249,21 +271,21 @@ void place_shop(lista& lista_curenta) {
 
 void runTutorial(lista& l1) {
     std::cout << "\n============================================\n";
-    std::cout << "          TUTORIAL AUTOMAT PORNIT           \n";
+    std::cout << "          AUTOMATIC TUTORIAL STARTED        \n";
     std::cout << "============================================\n";
     
     player tut_player("Jucator_Tutorial", 500000);
     bot tut_bot("Bot_Tutorial");
 
-    std::cout << "[TUTORIAL] Primesti un cont de start.\n";
+    std::cout << "[TUTORIAL] You receive a starter account.\n";
     std::cout << tut_player << "\n";
     
-    std::cout << "[TUTORIAL] Sistemul selecteaza 4 iteme aleatorii din magazin...\n";
+    std::cout << "[TUTORIAL] The system selects 4 random items from the store...\n";
     l1.item_select();
     l1.show_selected_itms();
     
-    std::cout << "\n[TUTORIAL] Sa presupunem ca vrei sa licitezi pentru primul item [1].\n";
-    Sleep(2000);
+    std::cout << "\n[TUTORIAL] Let's assume you want to bid on the first item [1].\n";
+    Sleep(5000);
     
     int ales = 0; 
     l1.show_bidding_item(ales);
@@ -272,29 +294,29 @@ void runTutorial(lista& l1) {
     l1.copy_item(clona, ales);
     int pret_pornire = clona.getPrice();
     
-    std::cout << "[TUTORIAL] Pretul de pornire este " << pret_pornire << "$.\n";
-    std::cout << "[TUTORIAL] Tu oferi o suma initiala putin mai mare.\n";
+    std::cout << "[TUTORIAL] The starting price is " << pret_pornire << "$.\n";
+    std::cout << "[TUTORIAL] You offer a slightly higher initial amount.\n";
     
     int bid_curent = pret_pornire + 50;
     std::cout << "Your bid: " << bid_curent << " $\n";
-    Sleep(2000);
+    Sleep(5000);
     
     tut_bot.call_mpr(pret_pornire);
     
     bool bot_continua = tut_bot.new_bidding(tut_player, bid_curent, l1.get_id(ales), pret_pornire);
     
     if (bot_continua) {
-        std::cout << "[TUTORIAL] Botul a licitat peste tine!\n";
-        std::cout << "[TUTORIAL] In acest punct poti alege sa plusezi sau sa te retragi.\n";
-        std::cout << "[TUTORIAL] Ne vom retrage din aceasta runda demonstrativa.\n";
+        std::cout << "[TUTORIAL] The bot outbid you!\n";
+        std::cout << "[TUTORIAL] At this point you can choose to bid higher or withdraw.\n";
+        std::cout << "[TUTORIAL] We will withdraw from this demonstration round.\n";
     } else {
-        std::cout << "[TUTORIAL] Ai fost norocos! Ai castigat licitatia din prima!\n";
-        std::cout << "[TUTORIAL] Iata cum arata balanta ta acum:\n";
+        std::cout << "[TUTORIAL] You were lucky! You won the auction on your first try!\n";
+        std::cout << "[TUTORIAL] Here is what your balance looks like now:\n";
         std::cout << tut_player << "\n";
     }
 
     std::cout << "\n============================================\n";
-    std::cout << "          TUTORIAL AUTOMAT INCHEIAT         \n";
+    std::cout << "          AUTOMATIC TUTORIAL ENDED          \n";
     std::cout << "============================================\n\n";
 }
 
@@ -305,11 +327,11 @@ int main() {
     runTutorial(l1);
 
     char vrea_sa_joace;
-    std::cout << "Vrei sa incepi jocul real? (y/n): ";
+    std::cout << "Do you want to start the real game? (y/n): ";
     std::cin >> vrea_sa_joace;
 
     if (vrea_sa_joace == 'n' || vrea_sa_joace == 'N') {
-        std::cout << "La revedere!\n";
+        std::cout << "Goodbye!\n";
         return 0;
     }
 
@@ -325,7 +347,7 @@ int main() {
     char cont = 'y', wnb;
     int cateIteme, ceItm;
     
-    // Game loop
+    // Bucla jocului
     while (cont == 'y' || cont == 'Y') {
         std::cout << "\n" << j1 << "\n"; 
         
@@ -375,7 +397,7 @@ int main() {
                         l1.show_bidding_item(ceItm);
                     }
                 }
-                std::cout << "-> Licitatia s-a incheiat pentru acest item.\n";
+                std::cout << "-> The auction has ended for this item.\n";
             }
         }
         
