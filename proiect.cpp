@@ -114,11 +114,11 @@ class player {
 class bot {
     private:
         int bot_bid;
-        int max_price;
+        double max_price;
         std::string name;
-        int gen_mul(){ // genereaza inmultitorul care arata ori cat poate sa pluseze pretul
-            std::uniform_real_distribution<double> dis(1.0, 3.0);
-            return std::max(1, static_cast<int>(dis(global_rng())));
+        double gen_mul(){ // genereaza inmultitorul care arata ori cat poate sa pluseze pretul
+            std::uniform_real_distribution<double> dis(0.5, 3.0);
+            return dis(global_rng());
         }
     public:
         bot(const std::string& n = "SimpleBOT"){
@@ -168,14 +168,21 @@ class lista {
     public:
         std::vector<item> lista_licitatie;
 
+        lista() {
+            for (int i = 0; i < 4; i++)
+                display[i] = 0;
+        }
+
         lista(const lista& other) {
             for (int i = 0; i < 4; i++)
                 display[i] = other.display[i];
+            lista_licitatie = other.lista_licitatie;
         }
         lista& operator=(const lista& other) {
             if (this != &other) {
                 for (int i = 0; i < 4; i++)
                     display[i] = other.display[i];
+                lista_licitatie = other.lista_licitatie;
             }
             return *this;
         }
@@ -269,6 +276,78 @@ void place_shop(lista& lista_curenta) {
     lista_curenta.show_selected_itms(); 
 }
 
+void runHardcodedDemo() {
+    std::system("cls");
+    std::cout << "\n============================================\n";
+    std::cout << "           AUTO-PLAY DEMO STARTED           \n";
+    std::cout << "============================================\n\n";
+
+    // Creating a specific player and bot for this demo
+    player demoPlayer("Alex_Gamer", 25000);
+    bot demoBot("SniperBot");
+
+    std::cout << "[DEMO] Player is connecting...\n";
+    std::cout << demoPlayer << "\n";
+    Sleep(2000);
+
+    // Hardcoding a few items instead of using the "lista" class
+    item itm1("Diamond Sword", 5000, 1);
+    item itm2("Ancient Shield", 3000, 1);
+    item itm3("Health Potion", 500, 3);
+
+    std::cout << "\n[DEMO] The trader brought the following special offers today:\n";
+    std::cout << "[1] " << itm1 << "\n";
+    std::cout << "[2] " << itm2 << "\n";
+    std::cout << "[3] " << itm3 << "\n";
+    Sleep(3500);
+
+    std::cout << "\n[DEMO] Alex_Gamer is looking over the offers...\n";
+    Sleep(2000);
+    
+    std::cout << "[DEMO] Alex_Gamer decided to bid on: " << itm1.getName() << "!\n";
+    std::cout << "[DEMO] The starting price is: " << itm1.getPrice() << " $\n";
+    Sleep(2000);
+
+    // Setting the bot's limits
+    demoBot.call_mpr(itm1.getPrice());
+
+    // The player makes the first call
+    int current_bid = itm1.getPrice() + 500;
+    std::cout << "Alex_Gamer bids: " << current_bid << " $\n";
+    Sleep(2000);
+
+    // Using an arbitrary ID for the item (e.g., 0) since we're not taking it from the list
+    bool bot_continua = demoBot.new_bidding(demoPlayer, current_bid, 0, itm1.getPrice());
+
+    if (bot_continua) {
+        Sleep(2000);
+        std::cout << "\n[DEMO] Alex_Gamer gets annoyed and raises the bid aggressively!\n";
+        
+        int aggressive_bid = demoBot.get_bid() + 1500;
+        std::cout << "Alex_Gamer bids: " << aggressive_bid << " $\n";
+        Sleep(2000);
+
+        // Second check round with the bot
+        bot_continua = demoBot.new_bidding(demoPlayer, aggressive_bid, 0, itm1.getPrice());
+        
+        if (bot_continua) {
+            Sleep(2000);
+            std::cout << "\n[DEMO] The price got too high. Alex_Gamer withdraws from the auction.\n";
+        }
+    } 
+
+    Sleep(2000);
+    std::cout << "\n[DEMO] The player's final balance after this session:\n";
+    std::cout << demoPlayer << "\n";
+
+    std::cout << "\n============================================\n";
+    std::cout << "            AUTO-PLAY DEMO ENDED            \n";
+    std::cout << "============================================\n\n";
+    char cnt;
+    std::cout << "Press any key to continue... ";
+    std::cin >> cnt;
+}
+
 void runTutorial(lista& l1) {
     std::cout << "\n============================================\n";
     std::cout << "          AUTOMATIC TUTORIAL STARTED        \n";
@@ -322,10 +401,17 @@ void runTutorial(lista& l1) {
 
 int main() {
     lista l1;
+
     l1.citire_lista("obiecte.txt"); 
+    runHardcodedDemo();
+    std::system("cls");
 
-    runTutorial(l1);
-
+    char vrea_tutorial;
+    std::cout << "Do you want a tutorial (now the object list is included) y/n: ";
+    std::cin >> vrea_tutorial; 
+    if (vrea_tutorial == 'y')
+        runTutorial(l1);
+    
     char vrea_sa_joace;
     std::cout << "Do you want to start the real game? (y/n): ";
     std::cin >> vrea_sa_joace;
