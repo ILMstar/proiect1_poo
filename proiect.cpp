@@ -1,5 +1,5 @@
 /*
- * DESCRIEREA PROBLEMEI ESTE IN README.md
+ * DESCRIEREA TEMEI ESTE IN README.md
  * Tema 34: Licitatii (Joc de licitatie / Shop)
  */
 
@@ -23,14 +23,16 @@ class item {
         std::string name;
         int price;
         int stock;
-        
+        static int total_items_created;   
     public:
         item(const std::string& n = "", int p = 0, int s = 0) {
             name = n; price = p; stock = s;
+            total_items_created++; // incrementam contorul
         }
         
         item(const item& other) {
             name = other.name; price = other.price; stock = other.stock;
+            total_items_created++; // incrementam contorul la copiere
         }
         
         item& operator=(const item& other) {
@@ -42,17 +44,24 @@ class item {
         
         ~item() {}
 
-        void stk_dcl() { stock--; }
+        inline void stk_dcl() { stock--; }
         
-        std::string getName() const { return name; }
-        int getPrice() const { return price; }
-        int getStock() const { return stock; }
+        static int getTotalItems() {
+            return total_items_created;
+        }
+
+        inline std::string getName() const { return name; }
+        inline int getPrice() const { return price; }
+        inline int getStock() const { return stock; }
 
         friend std::ostream& operator<<(std::ostream& os, const item& i) {
             os << "Item: " << i.name << " -> Price: " << i.price << " $ (Stock: " << i.stock << ")";
             return os;
         }
 };
+
+// Initializare atribut static
+int item::total_items_created = 0;
 
 class player {
     private:
@@ -101,7 +110,7 @@ class player {
                 std::cout << "You don't have this item\n";
         }
 
-        int check_balance() const {
+        inline int check_balance() const {
             return balance;
         }
         
@@ -145,7 +154,7 @@ class bot {
                 std::uniform_real_distribution<double> dis(0.5, 2.1);
                 bot_bid = player_price + static_cast<int>(500 * dis(global_rng()));
                 std::cout<<"The bot has bid "<< bot_bid <<"\n";
-                return true; 
+                return true;
             }
             else {
                 std::cout << "You got the item!\n";
@@ -154,7 +163,7 @@ class bot {
             }
         }
 
-        int get_bid() const {return bot_bid;};
+        inline int get_bid() const {return bot_bid;}; 
 
         friend std::ostream& operator<<(std::ostream& os, const bot& b) {
             os << "Bot " << b.name;
@@ -164,7 +173,8 @@ class bot {
 
 class lista {
     private:
-        int display[4];    
+        int display[4];
+        int shopItms[10]; 
     public:
         std::vector<item> lista_licitatie;
 
@@ -178,6 +188,7 @@ class lista {
                 display[i] = other.display[i];
             lista_licitatie = other.lista_licitatie;
         }
+
         lista& operator=(const lista& other) {
             if (this != &other) {
                 for (int i = 0; i < 4; i++)
@@ -186,6 +197,7 @@ class lista {
             }
             return *this;
         }
+
         void citire_lista(const std::string& fisier) { 
             std::ifstream file(fisier);
             if(!file.is_open()) {
@@ -211,12 +223,12 @@ class lista {
             file.close();
         }
 
-        void item_select() { // selecteaza 4 iteme pt licitatie
-            if (lista_licitatie.size() < 4) return; 
+        void item_select(int nr) { // selecteaza 4 iteme pt licitatie
+            if (lista_licitatie.size() < nr) return; 
 
             std::uniform_int_distribution<int> dis(0, lista_licitatie.size() - 1);
             
-            for (int i = 0; i < 4; i++) { // selecteaza 4 id-uri de iteme
+            for (int i = 0; i < nr; i++) { // selecteaza 4 id-uri de iteme
                 int numar_extras;
                 bool este_duplicat;
                 do {
@@ -233,9 +245,9 @@ class lista {
             }
         }
 
-        void show_selected_itms() const {
+        void show_selected_itms(int more) const {
             std::cout << "\n=== UP FOR AUCTION THIS ROUND ===\n";
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < more; i++) {
                 std::cout << "[" << i + 1 << "] " << lista_licitatie[display[i]] << "\n";
             }
         }
@@ -250,7 +262,7 @@ class lista {
             current_item = lista_licitatie[display[i]];
         }
 
-        int get_id(int i) const {
+        inline int get_id(int i) const {
             return display[i];
         }
 
@@ -258,22 +270,28 @@ class lista {
             os << "The list contains " << l.lista_licitatie.size() << " valid offers.";
             return os;
         }
+
+        inline int get_display(int i) const {
+            return display[i];
+        }
 };
 
 void place_shop(lista& lista_curenta) {
     std::system("cls");
-    std::cout << "The trader has arrived and now is setting up the shop!\n";
-    Sleep(1500);
-    std::system("cls");
     char v[4] = {'-', '\\', '|', '/'};
     for (int j = 0; j < 8; j++)
         for (int i = 0; i < 4; i++) {
-            std::cout << "Loading " << v[i];
+            std::cout << "The trader has arrived and now is setting up the shop! Loading " << v[i];
             Sleep(50);
             std::system("cls");
         }
-    lista_curenta.item_select();
-    lista_curenta.show_selected_itms(); 
+    lista_curenta.item_select(10); // selecteaza 10 iteme
+    lista_curenta.show_selected_itms(10);
+    int v[4]; // iau id-ul itemelor
+    for (int i = 0; i < 4; i++) {
+        v[i] = lista_curenta.get_display(i);
+    }
+    // si logica de cumparat
 }
 
 void runHardcodedDemo() {
@@ -360,8 +378,8 @@ void runTutorial(lista& l1) {
     std::cout << tut_player << "\n";
     
     std::cout << "[TUTORIAL] The system selects 4 random items from the store...\n";
-    l1.item_select();
-    l1.show_selected_itms();
+    l1.item_select(4);
+    l1.show_selected_itms(4);
     
     std::cout << "\n[TUTORIAL] Let's assume you want to bid on the first item [1].\n";
     Sleep(5000);
@@ -437,8 +455,8 @@ int main() {
     while (cont == 'y' || cont == 'Y') {
         std::cout << "\n" << j1 << "\n"; 
         
-        l1.item_select();
-        l1.show_selected_itms();
+        l1.item_select(4);
+        l1.show_selected_itms(4);
         
         std::cout << "\nDo you want to buy something? (y/n): ";
         std::cin >> wnb;
@@ -494,7 +512,9 @@ int main() {
         }
     }
 
-    std::cout << "\nGame Over!" << j1 << "\n";
+    std::cout << "\nGame Over! " << j1 << "\n";
+    // Afisam utilizarea metodei statice la final pentru a demonstra ca functioneaza
+    std::cout << "Statistic: Total items loaded/cloned during the game: " << item::getTotalItems() << "\n";
 
     return 0;
 }
