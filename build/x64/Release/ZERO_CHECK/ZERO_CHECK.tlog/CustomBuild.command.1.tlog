@@ -1,0 +1,10 @@
+^C:\UNIBUC\ANUL_I_SEM2\POO\PROIECTE\PROIECT1_POO\BUILD\CMAKEFILES\8589B03E192F13B13A19EE13B2812FB5\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo -BC:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build/auction_house_sfml.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

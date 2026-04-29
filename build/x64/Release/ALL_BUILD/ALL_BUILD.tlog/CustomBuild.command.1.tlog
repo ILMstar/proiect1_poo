@@ -1,0 +1,10 @@
+^C:\UNIBUC\ANUL_I_SEM2\POO\PROIECTE\PROIECT1_POO\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo -BC:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build --check-stamp-file C:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

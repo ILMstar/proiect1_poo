@@ -80,3 +80,22 @@ Laptop@3500@5
 g++ -o auction main.cpp -o auction.exe
 ./auction.exe
 ```
+
+---
+
+## SFML UI (Windows)
+
+### Build with CMake
+
+1. Install SFML 2.5+ and set `SFML_DIR` to the folder that contains `SFMLConfig.cmake`.
+2. Generate and build:
+
+```bash
+cmake -S . -B build
+cmake --build build --config Release
+```
+
+### Run
+
+- Copy `obiecte.txt` next to the executable or run the executable from this folder.
+- The UI loads a system font from `C:/Windows/Fonts/consola.ttf` (fallback: `arial.ttf`).

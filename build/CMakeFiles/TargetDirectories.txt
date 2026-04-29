@@ -1,0 +1,3 @@
+C:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build/CMakeFiles/auction_sfml.dir
+C:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build/CMakeFiles/ALL_BUILD.dir
+C:/unibuc/anul_I_sem2/POO/proiecte/proiect1_poo/build/CMakeFiles/ZERO_CHECK.dir
