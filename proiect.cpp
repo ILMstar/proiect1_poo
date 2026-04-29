@@ -3,325 +3,33 @@
  * Tema 34: Licitatii (Joc de licitatie / Shop)
  */
 
+#include <cstdlib>
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <random>
 #include <string>
-#include <ctime>
-#include <windows.h> // pt sleep
-#include <cstdlib> // pt std::system
+#include <windows.h>
 
-// Generator global ca sa nu recream RNG-ul in fiecare functie.
-// Asa pastram random-ul consistent pe toata durata jocului.
-static std::mt19937& global_rng() {
-    // Seed luat de la ceasul calculatorului pt randomness
-    static std::mt19937 gen(static_cast<unsigned>(std::time(nullptr)));
-    return gen;
-}
-
-// Reprezinta un obiect care poate aparea in shop/licitatie.
-class item {
-    private:
-        std::string name;
-        int price;
-        int stock;
-        static int total_items_created;   
-    public:
-        // Constructor simplu pentru creare item nou.
-        item(const std::string& n = "", int p = 0, int s = 0) {
-            name = n; price = p; stock = s;
-            total_items_created++; // incrementam contorul
-        }
-        
-        // Constructor de copiere folosit cand clonam iteme in gameplay/tutorial.
-        item(const item& other) {
-            name = other.name; price = other.price; stock = other.stock;
-            total_items_created++; // incrementam contorul la copiere
-        }
-        
-        // Operator de atribuire: suprascrie datele item-ului curent.
-        item& operator=(const item& other) {
-            if (this != &other) {
-                name = other.name; price = other.price; stock = other.stock;
-            }
-            return *this;
-        }
-        
-        ~item() {}
-
-        // Scadem stocul cu 1 cand e nevoie.
-        inline void stk_dcl() { stock--; }
-        
-        // Statistica globala: cate iteme au fost create/copiate in total.
-        static int getTotalItems() {
-            return total_items_created;
-        }
-
-        inline std::string getName() const { return name; }
-        inline int getPrice() const { return price; }
-        inline int getStock() const { return stock; }
-
-        friend std::ostream& operator<<(std::ostream& os, const item& i) {
-            os << "Item: " << i.name << " -> Price: " << i.price << " $ (Stock: " << i.stock << ")";
-            return os;
-        }
-};
-
-// Initializare atribut static
-int item::total_items_created = 0;
-
-// Clasa pentru jucatorul uman (nume, bani, inventar).
-class player {
-    private:
-        std::string name;
-        int balance;
-        int* inv; // pt alocare dinamica
-        
-    public:
-        // Inventarul e un vector dinamic simplu de 100 de elem
-        player(const std::string& n = "Unknown", int b = 0) {
-            name = n;
-            balance = b;
-            inv = new int[99];
-            for(int i=0; i<99; i++) inv[i] = 0;
-        }
-        
-        // Copiere, ca sa nu impartim acelasi pointer intre obiecte.
-        player(const player& other) {
-            name = other.name; balance = other.balance;
-            inv = new int[99]; // alocam memorie pt copiere
-            for(int i=0; i<99; i++) inv[i] = other.inv[i];
-        }
-        
-        // Atribuire intre playeri deja construiti.
-        player& operator=(const player& other) {
-            if (this != &other) {
-                name = other.name; balance = other.balance;
-                // memorie incarcata doar scriem peste
-                for(int i=0; i<99; i++) inv[i] = other.inv[i];
-            }
-            return *this;
-        }
-        
-        ~player() {
-            delete[] inv;
-        }
-
-        // Cand cumparam: crestem cantitatea in inventar si scadem bani.
-        void bought(int id, int pret) {
-            inv[id]++;
-            balance -= pret; 
-        }
-
-        // Cand vindem: daca avem itemul, scadem din inventar si primim bani.
-        void sold(int id, int pret) { 
-            if (inv[id] > 0) {        // mai vedem daca mai trb ceva adaugat aici -------------------------------------------------------
-                inv[id]--;
-                balance += pret;
-            }
-            else
-                std::cout << "You don't have this item\n";
-        }
-
-        inline int check_balance() const {
-            return balance;
-        }
-        
-        friend std::ostream& operator<<(std::ostream& os, const player& p) { 
-            os << "Player: " << p.name << " | Balance: " << p.balance << " $";
-            return os;
-        }
-};
-
-// Bot-ul simuleaza un adversar la licitatie.
-class bot {
-    private:
-        int bot_bid;
-        double max_price;
-        std::string name;
-        // Inmultitor random care decide cam pana unde merge botul cu licitatia.
-        double gen_mul(){ // genereaza inmultitorul care arata ori cat poate sa pluseze pretul
-            std::uniform_real_distribution<double> dis(0.5, 3.0);
-            return dis(global_rng());
-        }
-    public:
-        bot(const std::string& n = "SimpleBOT"){
-            name = n;
-        }
-        bot(const bot& other) {
-            name = other.name;
-            bot_bid = other.bot_bid;
-            max_price = other.max_price;
-        }
-        bot& operator=(const bot& other) {
-            if (this != &other) {
-                name = other.name;
-                bot_bid = other.bot_bid;
-                max_price = other.max_price;
-            }
-            return *this;
-        }
-        // Seteaza maximul intern al botului in functie de pretul de baza.
-        void call_mpr(int price_of_item) { 
-            max_price = price_of_item * gen_mul();
-        }
-        // Returneaza true daca licitatia continua (botul mai joaca), false daca jucatorul castiga.
-        int new_bidding(player& current_player, int player_price, int item_id, int item_pret){ // game engine
-            if (player_price < max_price) {
-                std::uniform_real_distribution<double> dis(0.5, 2.1);
-                bot_bid = player_price + static_cast<int>(500 * dis(global_rng()));
-                std::cout<<"The bot has bid "<< bot_bid <<"\n";
-                return true;
-            }
-            else {
-                // Cand jucatorul trece peste limita botului, botul cedeaza itemul.
-                std::cout << "You got the item!\n";
-                current_player.bought(item_id, player_price); 
-                return false; 
-            }
-        }
-
-        inline int get_bid() const {return bot_bid;}; 
-
-        friend std::ostream& operator<<(std::ostream& os, const bot& b) {
-            os << "Bot " << b.name;
-            return os;
-        }
-};
-
-// Lista mare de obiecte + selectie random pentru runda curenta.
-class lista {
-    private:
-        // display tine indexii itemelor alese pentru runda curenta.
-        int display[9];
-        // Placeholder pentru shop mode (inca nefolosit complet).
-        int shopItms[10]; 
-    public:
-        std::vector<item> lista_licitatie;
-
-        lista() {
-            for (int i = 0; i < 10; i++)
-                display[i] = 0;
-        }
-
-        lista(const lista& other) {
-            for (int i = 0; i < 10; i++)
-                display[i] = other.display[i];
-            lista_licitatie = other.lista_licitatie;
-        }
-
-        lista& operator=(const lista& other) {
-            if (this != &other) {
-                for (int i = 0; i < 9; i++)
-                    display[i] = other.display[i];
-                lista_licitatie = other.lista_licitatie;
-            }
-            return *this;
-        }
-
-        void citire_lista(const std::string& fisier) { 
-            // Citim formatul: nume@pret@stoc
-            std::ifstream file(fisier);
-            if(!file.is_open()) {
-                std::cout << "File not found: " << fisier << "\n";
-                return;
-            }
-            
-            std::string line;
-            while (getline(file, line)) { // interpretare fisier simbolul @ delimiteaza nume pret si cantitate
-                int pret = 0, stoc = 0, cee = 0;
-                std::string nume_produs = "";
-                
-                // interpretare fisier caracter cu caracter.
-                for (std::size_t i = 0; i < line.length(); i++) {
-                    if (line[i] == '@') { 
-                        cee++; continue;
-                    }
-                    if (cee == 0) nume_produs += line[i];
-                    if (cee == 1) pret = pret * 10 + (line[i] - '0');
-                    if (cee == 2) stoc = stoc * 10 + (line[i] - '0');
-                }
-                // Salvam itemul in lista de oferte.
-                lista_licitatie.push_back(item(nume_produs, pret, stoc));
-            }
-            file.close();
-        }
-
-        void item_select(int nr) { // selecteaza 4 iteme pt licitatie
-            if (lista_licitatie.size() < nr) return; 
-
-            std::uniform_int_distribution<int> dis(0, lista_licitatie.size() - 1);
-            
-            for (int i = 0; i < nr; i++) { // selecteaza 4 id-uri de iteme
-                int numar_extras;
-                bool este_duplicat;
-                do {
-                    este_duplicat = false;
-                    numar_extras = dis(global_rng());
-                    // Verificam sa nu apara acelasi item de 2 ori in aceeasi selectie.
-                    for (int j = 0; j < i; j++) {
-                        if (display[j] == numar_extras) {
-                            este_duplicat = true;
-                        }
-                    }
-                } while (este_duplicat); 
-                
-                display[i] = numar_extras;
-            }
-        }
-
-        // Afiseaza ofertele alese pentru runda curenta.
-        void show_selected_itms(int more) const {
-            std::cout << "\n=== ITEMS AVAILABLE THIS ROUND ===\n";
-            for (int i = 0; i < more; i++) {
-                std::cout << "[" << i + 1 << "] " << lista_licitatie[display[i]] << "\n";
-            }
-        }
-
-        // Arata clar ce item este in licitatie la momentul respectiv.
-        void show_bidding_item(int n) const {
-            if (n >= 0 && n < 4) {
-                std::cout << "\nBidding for: " << lista_licitatie[display[n]] << "\n";
-            }
-        }
-
-        // Facem o copie a itemului selectat in obiectul primit ca parametru.
-        void copy_item(item& current_item, int i){ 
-            current_item = lista_licitatie[display[i]];
-        }
-
-        inline int get_id(int i) const {
-            return display[i];
-        }
-
-        friend std::ostream& operator<<(std::ostream& os, const lista& l) { // afisare prin returnare de consola
-            os << "The list contains " << l.lista_licitatie.size() << " valid offers.";
-            return os;
-        }
-
-        inline int get_display(int i) const {
-            return display[i];
-        }
-};
+#include "auction_exceptions.h"
+#include "auction_house.h"
+#include "bot.h"
+#include "item.h"
+#include "lista.h"
+#include "player.h"
 
 void place_shop(lista& lista_curenta, player& player_curent) {
     std::system("cls");
-    // Animatie simpla de loading in consola.
     char vect[4] = {'-', '\\', '|', '/'};
-    for (int j = 0; j < 8; j++)
+    for (int j = 0; j < 8; j++) {
         for (int i = 0; i < 4; i++) {
             std::cout << "The trader has arrived and now is setting up the shop! Loading " << vect[i];
             Sleep(50);
             std::system("cls");
         }
-    lista_curenta.item_select(10); // selecteaza 10 iteme
-    lista_curenta.show_selected_itms(10);
-    int v[9]; // iau id-ul itemelor
-    for (int i = 0; i < 10; i++) {
-        v[i] = lista_curenta.get_display(i);
     }
-    // si logica de cumparat
+    lista_curenta.item_select(10);
+    lista_curenta.show_selected_itms(10);
+    for (int i = 0; i < 10; i++) {
+        (void)lista_curenta.get_display(i);
+    }
     char vrea_sa_vanda = 'n';
     std::cout << "Do you want to sell anything? y/n: ";
     std::cin >> vrea_sa_vanda;
@@ -466,112 +174,118 @@ void runTutorial(lista& l1) {
 
 //demo -> tutorial optional -> joc real in bucla.
 int main() {
-    lista l1;
+    try {
+        lista l1;
 
-    // Incarcam toate obiectele disponibile din fisierul local.
-    l1.citire_lista("obiecte.txt"); 
-    // Pornim demo-ul automat ca introducere in mecanica jocului.
-    runHardcodedDemo();
-    std::system("cls");
+        l1.citire_lista("obiecte.txt");
+        runHardcodedDemo();
+        std::system("cls");
 
-    char vrea_tutorial;
-    std::cout << "Do you want a tutorial (now the object list is included) y/n: ";
-    std::cin >> vrea_tutorial; 
-    if (vrea_tutorial == 'y')
-        runTutorial(l1);
-    
-    char vrea_sa_joace;
-    std::cout << "Do you want to start the real game? (y/n): ";
-    std::cin >> vrea_sa_joace;
+        char vrea_tutorial;
+        std::cout << "Do you want a tutorial (now the object list is included) y/n: ";
+        std::cin >> vrea_tutorial;
+        if (vrea_tutorial == 'y') {
+            runTutorial(l1);
+        }
 
-    if (vrea_sa_joace == 'n' || vrea_sa_joace == 'N') {
-        std::cout << "Goodbye!\n";
-        return 0;
-    }
+        char vrea_sa_joace;
+        std::cout << "Do you want to start the real game? (y/n): ";
+        std::cin >> vrea_sa_joace;
 
-    std::system("cls");
-    std::string name;
-    std::cout << "\nEnter your name: ";
-    std::cin >> name;
-    
-    std::cout << "Your name has been registered.\n";
-    // Jucatorul porneaste cu sold fix, apoi liciteaza impotriva botului Gigel.
-    player j1(name, 50000); 
-    bot gigel("Gigel");     
-    
-    char cont = 'y', wnb;
-    int cateIteme, ceItm;
-    
-    // Bucla jocului
-    while (cont == 'y' || cont == 'Y') {
-        // La inceput de runda afisam statusul curent al jucatorului.
-        std::cout << "\n" << j1 << "\n"; 
-        
-        // Selectam 4 iteme random pentru runda asta.
-        l1.item_select(4);
-        l1.show_selected_itms(4);
-        
-        std::cout << "\nDo you want to buy something? (y/n): ";
-        std::cin >> wnb;
-        
-        if (wnb == 'y') {
-            std::cout << "How many items do you want to bid on? (1-4): ";
-            std::cin >> cateIteme;
-            
-            // Pentru fiecare item ales, rulam o mini-licitatie separata.
-            for (int i = 0; i < cateIteme; i++) {
-                std::cout << "\nChoose item no. " << i + 1 << " (1 to 4): ";
-                std::cin >> ceItm;
-                ceItm--;
-   
-                l1.show_bidding_item(ceItm);
-                item clona;
-                l1.copy_item(clona, ceItm);
-                
-                std::cout<<"Name your price: ";
-                int player_bid_pricecall;
-                std::cin >> player_bid_pricecall;
-                
-                // nu poti licita peste ce bani ai.
-                while (player_bid_pricecall > j1.check_balance()) {
-                    std::cout << "You can't bid that much money!!! Bid again: ";
+        if (vrea_sa_joace == 'n' || vrea_sa_joace == 'N') {
+            std::cout << "Goodbye!\n";
+            return 0;
+        }
+
+        std::system("cls");
+        std::string name;
+        std::cout << "\nEnter your name: ";
+        std::cin >> name;
+
+        std::cout << "Your name has been registered.\n";
+        player j1(name, 50000);
+        bot gigel("Gigel");
+
+        AuctionHouse house(gigel);
+        std::cout << "Opponent registered: ";
+        house.describeOpponent(std::cout);
+        std::cout << "\n";
+        if (house.opponentIsBot()) {
+            std::cout << "Dynamic cast check: opponent is a bot.\n";
+        }
+
+        char cont = 'y', wnb;
+        int cateIteme, ceItm;
+
+        while (cont == 'y' || cont == 'Y') {
+            std::cout << "\n" << j1 << "\n";
+
+            l1.item_select(4);
+            l1.show_selected_itms(4);
+
+            std::cout << "\nDo you want to buy something? (y/n): ";
+            std::cin >> wnb;
+
+            if (wnb == 'y') {
+                std::cout << "How many items do you want to bid on? (1-4): ";
+                std::cin >> cateIteme;
+
+                for (int i = 0; i < cateIteme; i++) {
+                    std::cout << "\nChoose item no. " << i + 1 << " (1 to 4): ";
+                    std::cin >> ceItm;
+                    ceItm--;
+
+                    l1.show_bidding_item(ceItm);
+                    item clona;
+                    l1.copy_item(clona, ceItm);
+
+                    std::cout << "Name your price: ";
+                    int player_bid_pricecall;
                     std::cin >> player_bid_pricecall;
-                }
-                
-                char bidding_cont = 'y'; 
-                gigel.call_mpr(clona.getPrice());
-                
-                // continua cat timp jucatorul vrea si botul mai raspunde.
-                while (bidding_cont == 'y' && gigel.new_bidding(j1, player_bid_pricecall, l1.get_id(ceItm), clona.getPrice()) == true) {
-                    std::cout<<"Do you want to continue bidding? y/n: ";
-                    std::cin >> bidding_cont;
-                    
-                    if (bidding_cont == 'y') {
-                        std::cout << "Your bid: ";
+
+                    while (player_bid_pricecall > j1.check_balance()) {
+                        std::cout << "You can't bid that much money!!! Bid again: ";
                         std::cin >> player_bid_pricecall;
-                        // Dublu control: nici peste buget, nici sub ultima oferta a botului.
-                        while (player_bid_pricecall > j1.check_balance() || player_bid_pricecall < gigel.get_bid()) {
-                            std::cout << "You can't bid that much money!!! Bid again: ";
-                            std::cin >> player_bid_pricecall;
-                        }
-                        std::system("cls");
-                        l1.show_bidding_item(ceItm);
                     }
+
+                    char bidding_cont = 'y';
+                    gigel.call_mpr(clona.getPrice());
+
+                    while (bidding_cont == 'y' &&
+                           gigel.new_bidding(j1, player_bid_pricecall, l1.get_id(ceItm), clona.getPrice()) == true) {
+                        std::cout << "Do you want to continue bidding? y/n: ";
+                        std::cin >> bidding_cont;
+
+                        if (bidding_cont == 'y') {
+                            std::cout << "Your bid: ";
+                            std::cin >> player_bid_pricecall;
+                            while (player_bid_pricecall > j1.check_balance() || player_bid_pricecall < gigel.get_bid()) {
+                                std::cout << "You can't bid that much money!!! Bid again: ";
+                                std::cin >> player_bid_pricecall;
+                            }
+                            std::system("cls");
+                            l1.show_bidding_item(ceItm);
+                        }
+                    }
+                    std::cout << "-> The auction has ended for this item.\n";
                 }
-                std::cout << "-> The auction has ended for this item.\n";
+            }
+
+            std::cout << "\nDo you want to continue to the next round? (y/n): ";
+            std::cin >> cont;
+            if (cont == 'y' || cont == 'Y') {
+                std::system("cls");
             }
         }
-        
-        std::cout << "\nDo you want to continue to the next round? (y/n): ";
-        std::cin >> cont;
-        if (cont == 'y' || cont == 'Y') {
-            std::system("cls");
-        }
+
+        std::cout << "\nGame Over! " << j1 << "\n";
+        std::cout << "Statistic: Total items loaded/cloned during the game: " << item::getTotalItems() << "\n";
+
+        return 0;
+    } catch (const AuctionError& err) {
+        std::cout << "Auction error: " << err.what() << "\n";
+    } catch (const std::exception& err) {
+        std::cout << "Unexpected error: " << err.what() << "\n";
     }
-
-    std::cout << "\nGame Over! " << j1 << "\n";
-    // Afisam utilizarea metodei statice la final pentru a demonstra ca functioneaza
-    std::cout << "Statistic: Total items loaded/cloned during the game: " << item::getTotalItems() << "\n";
-
-    return 0;
+    return 1;
 }
